@@ -1,0 +1,794 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#f5f5f5">
+  <title>交班报表助手</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    /* ========== Reset & Base ========== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: #f0f0f0;
+      color: #333;
+      min-height: 100vh;
+      -webkit-tap-highlight-color: transparent;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ========== Header ========== */
+    .header {
+      background: #fff;
+      padding: 16px 20px;
+      text-align: center;
+      border-bottom: 1px solid #e0e0e0;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .header .store-name {
+      font-size: 17px;
+      font-weight: 600;
+      color: #333;
+      letter-spacing: 0.5px;
+    }
+    .header .date {
+      font-size: 13px;
+      color: #999;
+      margin-top: 4px;
+    }
+
+    /* ========== Main Content ========== */
+    .main {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 16px;
+      padding-bottom: 100px;
+    }
+
+    /* ========== Card ========== */
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      padding: 18px 20px;
+      margin-bottom: 12px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    }
+    .card-label {
+      font-size: 15px;
+      font-weight: 600;
+      color: #444;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .card-label .icon-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 8px;
+      background: #888;
+    }
+    .card-label .left { display: flex; align-items: center; }
+
+    /* ========== Input Row ========== */
+    .input-row {
+      display: flex;
+      align-items: center;
+      margin-bottom: 10px;
+      gap: 10px;
+    }
+    .input-row:last-child { margin-bottom: 0; }
+    .input-row .field-name {
+      font-size: 14px;
+      color: #777;
+      white-space: nowrap;
+      min-width: 56px;
+    }
+    .input-row input {
+      flex: 1;
+      height: 40px;
+      border: 1px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 0 12px;
+      font-size: 15px;
+      color: #333;
+      outline: none;
+      transition: border-color 0.2s;
+      background: #fafafa;
+      text-align: right;
+    }
+    .input-row input:focus {
+      border-color: #999;
+      background: #fff;
+    }
+    .input-row input::placeholder { color: #ccc; }
+    .input-row .unit {
+      font-size: 14px;
+      color: #999;
+      min-width: 24px;
+      text-align: left;
+    }
+
+    /* Read-only field */
+    .input-row input[readonly] {
+      background: #f5f5f5;
+      color: #aaa;
+      cursor: default;
+    }
+
+    /* ========== Clickable Summary Row ========== */
+    .summary-tap {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: #fafafa;
+      border: 1px dashed #d5d5d5;
+      border-radius: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: background 0.2s, border-color 0.2s;
+      margin-bottom: 10px;
+    }
+    .summary-tap:active { background: #f0f0f0; border-color: #bbb; }
+    .summary-tap .tap-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .summary-tap .tap-label {
+      font-size: 14px;
+      color: #666;
+    }
+    .summary-tap .tap-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #333;
+      margin-top: 2px;
+    }
+    .summary-tap .tap-value.empty { color: #ccc; font-weight: 400; font-size: 15px; }
+    .summary-tap .tap-arrow {
+      font-size: 18px;
+      color: #bbb;
+    }
+    .summary-tap .tap-count {
+      font-size: 12px;
+      color: #999;
+      margin-top: 2px;
+    }
+
+    /* ========== Button ========== */
+    .btn-area {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 12px 16px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      background: linear-gradient(transparent, #f0f0f0 30%);
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    .btn-copy {
+      width: 100%;
+      height: 48px;
+      border: none;
+      border-radius: 12px;
+      background: #555;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 1px;
+      transition: background 0.2s, transform 0.1s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .btn-copy:active {
+      background: #333;
+      transform: scale(0.98);
+    }
+
+    /* ========== Toast ========== */
+    .toast {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.8);
+      background: rgba(0,0,0,0.78);
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 24px;
+      font-size: 15px;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.25s, transform 0.25s;
+      z-index: 999;
+    }
+    .toast.show {
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    /* ========== Modal ========== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.4);
+      z-index: 100;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s;
+    }
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .modal-sheet {
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      width: 100%;
+      max-width: 480px;
+      max-height: 80vh;
+      display: flex;
+      flex-direction: column;
+      transform: translateY(100%);
+      transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .modal-overlay.active .modal-sheet {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid #eee;
+      flex-shrink: 0;
+    }
+    .modal-header .modal-title {
+      font-size: 17px;
+      font-weight: 600;
+      color: #333;
+    }
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border: none;
+      background: #f0f0f0;
+      border-radius: 50%;
+      font-size: 18px;
+      color: #888;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+    }
+    .modal-close:active { background: #ddd; }
+
+    .modal-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 20px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .modal-footer {
+      padding: 12px 20px;
+      padding-bottom: max(12px, env(safe-area-inset-bottom));
+      border-top: 1px solid #eee;
+      display: flex;
+      gap: 10px;
+      flex-shrink: 0;
+    }
+
+    /* Entry Item */
+    .entry-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid #f5f5f5;
+    }
+    .entry-item .entry-index {
+      font-size: 13px;
+      color: #bbb;
+      min-width: 40px;
+    }
+    .entry-item .entry-amount {
+      font-size: 18px;
+      font-weight: 600;
+      color: #333;
+      flex: 1;
+      text-align: right;
+      padding-right: 12px;
+    }
+    .entry-delete {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: #f5f5f5;
+      border-radius: 50%;
+      font-size: 14px;
+      color: #bbb;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      flex-shrink: 0;
+    }
+    .entry-delete:active { background: #ff5252; color: #fff; }
+
+    .empty-hint {
+      text-align: center;
+      color: #ccc;
+      font-size: 14px;
+      padding: 32px 0;
+    }
+
+    /* Add Entry Row */
+    .add-row {
+      display: flex;
+      gap: 10px;
+      margin-top: 16px;
+    }
+    .add-row input {
+      flex: 1;
+      height: 44px;
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 0 14px;
+      font-size: 16px;
+      color: #333;
+      outline: none;
+      background: #fafafa;
+      text-align: right;
+    }
+    .add-row input:focus { border-color: #999; background: #fff; }
+    .add-row input::placeholder { color: #ccc; }
+    .btn-add {
+      height: 44px;
+      padding: 0 20px;
+      border: none;
+      border-radius: 10px;
+      background: #555;
+      color: #fff;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: background 0.2s;
+    }
+    .btn-add:active { background: #333; }
+
+    /* Modal Summary */
+    .modal-summary {
+      display: flex;
+      justify-content: space-between;
+      padding: 14px 0 0;
+      border-top: 2px solid #eee;
+      margin-top: 12px;
+    }
+    .modal-summary .ms-item {
+      text-align: center;
+      flex: 1;
+    }
+    .modal-summary .ms-label {
+      font-size: 12px;
+      color: #999;
+    }
+    .modal-summary .ms-value {
+      font-size: 20px;
+      font-weight: 700;
+      color: #333;
+      margin-top: 4px;
+    }
+
+    /* Confirm button in modal */
+    .btn-confirm {
+      flex: 1;
+      height: 44px;
+      border: none;
+      border-radius: 10px;
+      background: #555;
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+      transition: background 0.2s;
+    }
+    .btn-confirm:active { background: #333; }
+    .btn-confirm:disabled {
+      background: #ccc;
+      cursor: default;
+    }
+
+    /* Safe area for iPhone notch */
+    @supports (padding-top: env(safe-area-inset-top)) {
+      .header { padding-top: calc(16px + env(safe-area-inset-top)); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <div class="header">
+    <div class="store-name" id="storeName">广州永庆坊店</div>
+    <div class="date" id="dateDisplay"></div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+
+    <!-- 有赞 -->
+    <div class="card">
+      <div class="card-label"><span class="left"><span class="icon-dot"></span>有赞</span></div>
+      <div class="input-row">
+        <span class="field-name">收银金额</span>
+        <input type="text" inputmode="decimal" id="youzanAmount" placeholder="0.00">
+        <span class="unit">元</span>
+      </div>
+      <div class="input-row">
+        <span class="field-name">订单数</span>
+        <input type="text" inputmode="numeric" id="youzanOrders" placeholder="0">
+        <span class="unit">单</span>
+      </div>
+    </div>
+
+    <!-- 现金 -->
+    <div class="card">
+      <div class="card-label"><span class="left"><span class="icon-dot"></span>现金</span></div>
+      <div class="input-row">
+        <span class="field-name">收银金额</span>
+        <input type="text" value="0.00" readonly>
+        <span class="unit">元</span>
+      </div>
+      <div class="input-row">
+        <span class="field-name">笔数</span>
+        <input type="text" value="0" readonly>
+        <span class="unit">笔</span>
+      </div>
+    </div>
+
+    <!-- 退款 -->
+    <div class="card">
+      <div class="card-label"><span class="left"><span class="icon-dot"></span>退款</span></div>
+      <div class="summary-tap" id="refundTap" onclick="openModal('refund')">
+        <div class="tap-info">
+          <span class="tap-label">退款金额</span>
+          <span class="tap-value empty" id="refundAmountDisplay">点击录入</span>
+          <span class="tap-count" id="refundCountDisplay"></span>
+        </div>
+        <span class="tap-arrow">›</span>
+      </div>
+    </div>
+
+    <!-- 企业微信 -->
+    <div class="card">
+      <div class="card-label"><span class="left"><span class="icon-dot"></span>企业微信</span></div>
+      <div class="summary-tap" id="weworkTap" onclick="openModal('wework')">
+        <div class="tap-info">
+          <span class="tap-label">收款金额</span>
+          <span class="tap-value empty" id="weworkAmountDisplay">点击录入</span>
+          <span class="tap-count" id="weworkCountDisplay"></span>
+        </div>
+        <span class="tap-arrow">›</span>
+      </div>
+    </div>
+
+    <!-- 当日营业额总计 -->
+    <div class="card">
+      <div class="card-label"><span class="left"><span class="icon-dot"></span>当日营业额总计</span></div>
+      <div class="input-row">
+        <span class="field-name">总计</span>
+        <input type="text" id="totalAmount" value="0.00" readonly>
+        <span class="unit">元</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom Button -->
+  <div class="btn-area">
+    <button class="btn-copy" onclick="copyReport()">📋 复制报表</button>
+  </div>
+
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ========== Modal: Refund / WeWork ========== -->
+  <div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+    <div class="modal-sheet" id="modalSheet" onclick="event.stopPropagation()">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle"></span>
+        <button class="modal-close" onclick="closeModalDirect()">✕</button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer">
+        <button class="btn-confirm" onclick="confirmModal()">✓ 确定返回</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ==================== State ====================
+    const state = {
+      refundEntries: [],
+      weworkEntries: [],
+      currentModal: null, // 'refund' | 'wework' | null
+    };
+
+    // ==================== Init ====================
+    function init() {
+      // Set date
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const day = now.getDate();
+      document.getElementById('dateDisplay').textContent = month + '月' + day + '日 营业额';
+
+      // 有赞金额变化时，自动同步到当日营业额总计
+      const youzanInput = document.getElementById('youzanAmount');
+      youzanInput.addEventListener('input', syncTotalAmount);
+      syncTotalAmount();
+
+      // Update displays
+      updateRefundDisplay();
+      updateWeworkDisplay();
+    }
+
+    function syncTotalAmount() {
+      const youzanVal = document.getElementById('youzanAmount').value || '0.00';
+      document.getElementById('totalAmount').value = youzanVal;
+    }
+
+    // ==================== Modal ====================
+    function openModal(type) {
+      state.currentModal = type;
+      const overlay = document.getElementById('modalOverlay');
+      const title = document.getElementById('modalTitle');
+
+      if (type === 'refund') {
+        title.textContent = '退款明细';
+      } else {
+        title.textContent = '企业微信收款明细';
+      }
+
+      renderModalBody();
+      overlay.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModalDirect() {
+      const overlay = document.getElementById('modalOverlay');
+      overlay.classList.remove('active');
+      document.body.style.overflow = '';
+      state.currentModal = null;
+    }
+
+    function closeModal(event) {
+      // Only close if clicking overlay itself
+      if (event.target === event.currentTarget) {
+        closeModalDirect();
+      }
+    }
+
+    function confirmModal() {
+      if (state.currentModal === 'refund') {
+        updateRefundDisplay();
+      } else if (state.currentModal === 'wework') {
+        updateWeworkDisplay();
+      }
+      closeModalDirect();
+    }
+
+    // ==================== Modal Body Rendering ====================
+    function renderModalBody() {
+      const body = document.getElementById('modalBody');
+      const entries = state.currentModal === 'refund' ? state.refundEntries : state.weworkEntries;
+      const type = state.currentModal;
+
+      let html = '';
+
+      if (entries.length === 0) {
+        html += '<div class="empty-hint">暂无记录，请在下方添加</div>';
+      } else {
+        entries.forEach((amount, index) => {
+          html += `
+            <div class="entry-item">
+              <span class="entry-index">#${index + 1}</span>
+              <span class="entry-amount">¥${formatMoney(amount)}</span>
+              <button class="entry-delete" onclick="deleteEntry(${index})">✕</button>
+            </div>
+          `;
+        });
+      }
+
+      // Summary
+      const total = entries.reduce((sum, a) => sum + a, 0);
+      html += `
+        <div class="modal-summary">
+          <div class="ms-item">
+            <div class="ms-label">合计金额</div>
+            <div class="ms-value">¥${formatMoney(total)}</div>
+          </div>
+          <div class="ms-item">
+            <div class="ms-label">总笔数</div>
+            <div class="ms-value">${entries.length} 笔</div>
+          </div>
+        </div>
+      `;
+
+      // Add row
+      html += `
+        <div class="add-row">
+          <input type="text" inputmode="decimal" id="modalAddInput" placeholder="输入金额" onkeydown="if(event.key==='Enter')addEntry()">
+          <button class="btn-add" onclick="addEntry()">添加</button>
+        </div>
+      `;
+
+      body.innerHTML = html;
+    }
+
+    // ==================== Entry CRUD ====================
+    function addEntry() {
+      const input = document.getElementById('modalAddInput');
+      if (!input) return;
+      const val = parseFloat(input.value);
+      if (isNaN(val) || val <= 0) {
+        showToast('请输入有效的金额');
+        return;
+      }
+
+      const entries = state.currentModal === 'refund' ? state.refundEntries : state.weworkEntries;
+      entries.push(Math.round(val * 100) / 100); // 保留2位小数
+      input.value = '';
+
+      // Re-render
+      renderModalBody();
+      // Focus back on input
+      setTimeout(() => {
+        const newInput = document.getElementById('modalAddInput');
+        if (newInput) newInput.focus();
+      }, 100);
+    }
+
+    function deleteEntry(index) {
+      const entries = state.currentModal === 'refund' ? state.refundEntries : state.weworkEntries;
+      entries.splice(index, 1);
+      renderModalBody();
+    }
+
+    // ==================== Update Main Displays ====================
+    function updateRefundDisplay() {
+      const total = state.refundEntries.reduce((sum, a) => sum + a, 0);
+      const count = state.refundEntries.length;
+
+      const amountEl = document.getElementById('refundAmountDisplay');
+      const countEl = document.getElementById('refundCountDisplay');
+
+      if (count > 0) {
+        amountEl.textContent = '¥' + formatMoney(total);
+        amountEl.classList.remove('empty');
+        countEl.textContent = count + ' 单';
+      } else {
+        amountEl.textContent = '点击录入';
+        amountEl.classList.add('empty');
+        countEl.textContent = '';
+      }
+    }
+
+    function updateWeworkDisplay() {
+      const total = state.weworkEntries.reduce((sum, a) => sum + a, 0);
+      const count = state.weworkEntries.length;
+
+      const amountEl = document.getElementById('weworkAmountDisplay');
+      const countEl = document.getElementById('weworkCountDisplay');
+
+      if (count > 0) {
+        amountEl.textContent = '¥' + formatMoney(total);
+        amountEl.classList.remove('empty');
+        countEl.textContent = count + ' 单';
+      } else {
+        amountEl.textContent = '点击录入';
+        amountEl.classList.add('empty');
+        countEl.textContent = '';
+      }
+    }
+
+    // ==================== Copy Report ====================
+    function copyReport() {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const day = now.getDate();
+
+      const youzanAmount = document.getElementById('youzanAmount').value || '0.00';
+      const youzanOrders = document.getElementById('youzanOrders').value || '0';
+      const refundTotal = state.refundEntries.reduce((sum, a) => sum + a, 0);
+      const refundCount = state.refundEntries.length;
+      const weworkTotal = state.weworkEntries.reduce((sum, a) => sum + a, 0);
+      const weworkCount = state.weworkEntries.length;
+      const totalAmount = document.getElementById('youzanAmount').value || '0.00';
+
+      const text = `【广州永庆坊店 ${month}月${day}日 营业额】
+
+有赞收银金额：${youzanAmount} 元
+有赞订单数：${youzanOrders} 单
+
+现金收银金额：0.00 元
+现金笔数：0 笔
+
+退款金额：${formatMoney(refundTotal)} 元
+退款订单数：${refundCount} 单
+
+企业微信收款金额：${formatMoney(weworkTotal)} 元
+企微订单数：${weworkCount} 单
+
+当日营业额总计：${totalAmount} 元`;
+
+      // Try clipboard API
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('✅ 已复制，可粘贴到微信');
+        }).catch(() => {
+          fallbackCopy(text);
+        });
+      } else {
+        fallbackCopy(text);
+      }
+    }
+
+    function fallbackCopy(text) {
+      const textarea = document.createElement('textarea');
+      textarea.value = text;
+      textarea.style.position = 'fixed';
+      textarea.style.left = '-9999px';
+      textarea.style.top = '-9999px';
+      document.body.appendChild(textarea);
+      textarea.focus();
+      textarea.select();
+      try {
+        document.execCommand('copy');
+        showToast('✅ 已复制，可粘贴到微信');
+      } catch (e) {
+        showToast('❌ 复制失败，请手动截图');
+      }
+      document.body.removeChild(textarea);
+    }
+
+    // ==================== Helpers ====================
+    function formatMoney(val) {
+      return val.toFixed(2);
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.classList.remove('show');
+      }, 1800);
+    }
+
+    // ==================== Start ====================
+    init();
+
+    // Register Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>
