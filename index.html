@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -22,6 +22,7 @@
       min-height: 100vh;
       -webkit-tap-highlight-color: transparent;
       -webkit-font-smoothing: antialiased;
+      touch-action: manipulation;
     }
 
     /* ========== Header ========== */
@@ -107,6 +108,9 @@
       transition: border-color 0.2s;
       background: #fafafa;
       text-align: right;
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
     }
     .input-row input:focus {
       border-color: #999;
@@ -357,6 +361,9 @@
       outline: none;
       background: #fafafa;
       text-align: right;
+      -webkit-user-select: text;
+      user-select: text;
+      -webkit-touch-callout: default;
     }
     .add-row input:focus { border-color: #999; background: #fff; }
     .add-row input::placeholder { color: #ccc; }
@@ -713,6 +720,9 @@
 
 有赞收银金额：${youzanAmount} 元
 有赞订单数：${youzanOrders} 单
+
+现金收银金额：0.00 元
+现金笔数：0 笔
 
 退款金额：${formatMoney(refundTotal)} 元
 退款订单数：${refundCount} 单
