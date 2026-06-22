@@ -1,7 +1,7 @@
 {
-  "name": "交班报表助手",
+  "name": "宁波秀水街店-交班报表助手",
   "short_name": "报表助手",
-  "description": "广州永庆坊店交班营业数据报表工具",
+  "description": "宁波秀水街店交班营业数据报表工具",
   "start_url": "./index.html",
   "display": "standalone",
   "orientation": "portrait",
